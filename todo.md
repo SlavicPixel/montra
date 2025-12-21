@@ -10,9 +10,9 @@
 ---
 
 ## 1. Autentikacija i korisnici
-- [ ] Implementirati user registraciju
-- [ ] Implementirati login view
-- [ ] Implementirati logout view
+- [x] Implementirati user registraciju
+- [x] Implementirati login view
+- [x] Implementirati logout view
 - [ ] Zaštititi sve expense view-e s `login_required`
 - [ ] Ograničiti pristup podacima isključivo na `request.user`
 
