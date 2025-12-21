@@ -20,30 +20,29 @@
 
 ## 2. Modeli (finalna provjera) 
 Ovdje treba popraviti models.py da radi bolje trenutno je samo osnovno 
-- [ ] `Expense` model
-  - [ ] naziv (npr. "Konzum")
-  - [ ] iznos (DecimalField, uvijek > 0)
-  - [ ] kategorija (ForeignKey)
-  - [ ] opis (optional)
-  - [ ] datum
-  - [ ] korisnik (ForeignKey -> User)
-- [ ] `Category` model
-  - [ ] naziv (unique)
-- [ ] Dodati indekse na `user` i `date`
+- [x] `Expense` model
+  - [x] naziv (npr. "Konzum")
+  - [x] iznos (DecimalField, uvijek > 0)
+  - [x] kategorija (ForeignKey)
+  - [x] opis (optional)
+  - [x] datum
+  - [x] korisnik (ForeignKey -> User)
+- [x] `Category` model
+  - [x] naziv (unique)
 
 ---
 
-## 3. Predefinirane kategorije - treba popraiti (za sad osnovno samo)
-- [ ] Kreirati početne kategorije:
-  - [ ] Hrana i piće
-  - [ ] Transport
-  - [ ] Računi
-  - [ ] Shopping
-  - [ ] Ostalo
+## 3. Predefinirane kategorije - automatski se iz dataseta uzimaju
+
+- [x] Kreirati početne kategorije:
+  - [x] Hrana i piće
+  - [x] Transport
+  - [x] Računi
+  - [x] Shopping
 
 ---
 
-## 4. Import podataka - treba popraiti (za sad osnovno samo)
+## 4. Import podataka 
 - [ ] Provjeriti da CSV import koristi ispravan `User`
 - [ ] Validirati iznose (pozitivni brojevi)
 - [ ] Validirati datume
