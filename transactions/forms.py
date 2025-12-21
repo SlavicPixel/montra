@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
+from .models import Transaction
 
 
 class RegisterForm(forms.ModelForm):
@@ -25,3 +26,19 @@ class RegisterForm(forms.ModelForm):
 class LoginForm(AuthenticationForm):
     username = forms.CharField()
     password = forms.CharField(widget=forms.PasswordInput)
+
+
+class TransactionForm(forms.ModelForm):
+    class Meta:
+        model = Transaction
+        fields = [
+            "transaction_type",
+            "amount",
+            "category",
+            "description",
+            "place",
+            "date",
+        ]
+        widgets = {
+            "date": forms.DateInput(attrs={"type": "date"}),
+        }

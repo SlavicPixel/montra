@@ -4,7 +4,10 @@ from .views import (
     login_view,
     logout_view,
     dashboard_view, 
-    MyTransactionsView
+    MyTransactionsView,
+    TransactionCreateView,
+    TransactionUpdateView,
+    TransactionDeleteView,
 )
 
 urlpatterns = [
@@ -12,5 +15,8 @@ urlpatterns = [
     path("login/", login_view, name="login"),
     path("logout/", logout_view, name="logout"),
     path("", dashboard_view, name="dashboard"),
-    path("my-transactions/", MyTransactionsView.as_view(), name="my-transactions"),
+    path("my/", MyTransactionsView.as_view(), name="my-transactions"),
+    path("create/", TransactionCreateView.as_view(), name="transaction-create"),
+    path("<int:pk>/edit/", TransactionUpdateView.as_view(), name="transaction-edit"),
+    path("<int:pk>/delete/", TransactionDeleteView.as_view(), name="transaction-delete"),
 ]

@@ -6,6 +6,17 @@
 <body>
 
 <h1>My Transactions</h1>
+<a href="{% url 'dashboard' %}">Dashboard</a>
+<p>
+    <a href="{% url 'transaction-create' %}">➕ Create new transaction</a>
+</p>
+
+<input
+    type="text"
+    id="search-input"
+    placeholder="Search category, description or place..."
+    style="width: 300px; padding: 5px;"
+>
 
 <table border="1" cellpadding="5">
     <thead>
@@ -16,39 +27,35 @@
             <th>Category</th>
             <th>Description</th>
             <th>Place</th>
+            <th>Actions</th>
         </tr>
     </thead>
-    <tbody>
-        {% for t in transactions %}
-            <tr>
-                <td>{{ t.date }}</td>
-                <td>{{ t.transaction_type }}</td>
-                <td>{{ t.amount }}</td>
-                <td>{{ t.category.name }}</td>
-                <td>{{ t.description }}</td>
-                <td>{{ t.place }}</td>
-            </tr>
-        {% empty %}
-            <tr>
-                <td colspan="6">No transactions</td>
-            </tr>
-        {% endfor %}
-    </tbody>
+
+    {% include "transactions/_transactions_table.html" %}
 </table>
 
-{% if is_paginated %}
-    <div style="margin-top: 10px;">
-        {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
-        {% endif %}
+<script>
+let timeout = null;
 
-        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+document.getElementById("search-input").addEventListener("input", function () {
+    clearTimeout(timeout);
 
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">Next</a>
-        {% endif %}
-    </div>
-{% endif %}
+    const query = this.value;
+
+    timeout = setTimeout(() => {
+        fetch(`?q=${encodeURIComponent(query)}`, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, "text/html");
+            const newBody = doc.querySelector("#transactions-body");
+            document.getElementById("transactions-body").innerHTML = newBody.innerHTML;
+        });
+    }, 300);
+});
+</script>
 
 </body>
 </html>
