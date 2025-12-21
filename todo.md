@@ -52,11 +52,11 @@ Ovdje treba popraviti models.py da radi bolje trenutno je samo osnovno
 ---
 
 ## 5. CRUD funkcionalnosti za rashode
-- [ ] List view (samo userovi rashodi)
-- [ ] Create view (unos rashoda)
-- [ ] Update view
-- [ ] Delete view
-- [ ] Osigurati da user ne može editati / brisati tuđe rashode
+- [x] List view (samo userovi rashodi)
+- [x] Create view (unos rashoda)
+- [x] Update view
+- [x] Delete view
+- [x] Osigurati da user ne može editati / brisati tuđe rashode
 
 ---
 

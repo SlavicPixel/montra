@@ -6,7 +6,6 @@ from django.utils.html import format_html
 from django.db.models import Count
 from .models import UserProfile, Transaction, Category
 
-# Unregister default UserAdmin to register custom
 admin.site.unregister(User)
 
 @admin.register(User)

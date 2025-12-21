@@ -52,7 +52,7 @@ class Transaction(models.Model):
         on_delete=models.PROTECT,
         related_name="transactions"
     )
-    description = models.TextField()  # now required
+    description = models.TextField()  
     place = models.CharField(max_length=100)
     date = models.DateField()
 
