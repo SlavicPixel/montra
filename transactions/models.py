@@ -29,8 +29,8 @@ class Category(models.Model):
 
 class Transaction(models.Model):
     TRANSACTION_TYPES = [
-        ("income", "Income"),
-        ("expense", "Expense"),
+        ("card", "Card"),
+        ("cash", "Cash"),
     ]
 
     user = models.ForeignKey(
@@ -52,7 +52,7 @@ class Transaction(models.Model):
         on_delete=models.PROTECT,
         related_name="transactions"
     )
-    description = models.TextField(blank=True)
+    description = models.TextField()  # now required
     place = models.CharField(max_length=100)
     date = models.DateField()
 
@@ -64,4 +64,4 @@ class Transaction(models.Model):
         ordering = ["-date"]
 
     def __str__(self):
-        return f"{self.user.username} | {self.transaction_type} | {self.amount}"
+        return f"{self.user.username} | {self.transaction_type} | {self.amount} | {self.category.name}"

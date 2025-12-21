@@ -6,17 +6,22 @@ from django.utils.html import format_html
 from django.db.models import Count
 from .models import UserProfile, Transaction, Category
 
+# Unregister default UserAdmin to register custom
 admin.site.unregister(User)
 
 @admin.register(User)
 class UserAdmin(DefaultUserAdmin):
-    list_display = ("username", "first_name", "last_name", "email", "age")
+    list_display = ("username", "first_name", "last_name", "email", "age", "address")
     list_filter = DefaultUserAdmin.list_filter
     search_fields = DefaultUserAdmin.search_fields
 
     def age(self, obj):
         return obj.profile.age if hasattr(obj, "profile") else None
     age.short_description = "Age"
+
+    def address(self, obj):
+        return obj.profile.address if hasattr(obj, "profile") else None
+    address.short_description = "Address"
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
@@ -25,7 +30,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ("user", "transaction_type", "amount", "category", "date", "place")
+    list_display = ("user", "transaction_type", "amount", "category", "description", "place", "date")
     search_fields = ("user__username", "description", "place")
     list_filter = ("category", "transaction_type", "date")
 
