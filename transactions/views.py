@@ -2,9 +2,11 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import ListView
 
 from .forms import RegisterForm, LoginForm
-from .models import UserProfile
+from .models import UserProfile, Transaction
 
 
 def register_view(request):
@@ -49,3 +51,18 @@ def logout_view(request):
 @login_required
 def dashboard_view(request):
     return render(request, "dashboard.html")
+
+
+class MyTransactionsView(LoginRequiredMixin, ListView):
+    model = Transaction
+    template_name = "transactions/my_transactions.html"
+    context_object_name = "transactions"
+    paginate_by = 50   
+
+    def get_queryset(self):
+        return (
+            Transaction.objects
+            .filter(user=self.request.user)
+            .select_related("category")
+            .order_by("-date")
+        )
