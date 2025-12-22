@@ -1,5 +1,6 @@
 asgiref==3.11.0
 Django==6.0
-psycopg==3.3.2
-psycopg-binary==3.3.2
-sqlparse==0.5.4
+Faker==39.0.0
+psycopg2-binary==2.9.11
+sqlparse==0.5.5
+tzdata==2025.3
