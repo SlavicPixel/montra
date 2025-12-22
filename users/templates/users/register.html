@@ -1,0 +1,18 @@
+{% extends "users/base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="text-center">
+    <h1 class="h4 text-gray-900 mb-4">Create an Account!</h1>
+</div>
+<form class="user" method="post">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <button class="btn btn-primary btn-user btn-block">
+        Register Account
+    </button>
+</form>
+<hr>
+<div class="text-center">
+    <a class="small" href="{% url "login" %}">Already have an account? Login!</a>
+</div>
+{% endblock content %}
