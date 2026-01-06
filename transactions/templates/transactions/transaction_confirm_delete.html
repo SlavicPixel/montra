@@ -1,0 +1,22 @@
+{% extends "transactions/base.html" %}
+
+{% block content %}
+<div class="container">
+  <form method="post">
+    {% csrf_token %}
+    <fieldset class="form-group">
+      <legend class="border-bottom mb-4">Delete Transaction</legend>
+      <h5>
+        Are you sure you want to delete
+        <strong>"{{ object.title }}"</strong>
+        transaction?
+      </h5>
+    </fieldset>
+
+    <div class="form-group mt-3">
+      <button class="btn btn-danger" type="submit">Yes, Delete</button>
+      <a class="btn btn-secondary" href="{% url 'transaction-list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock content %}
