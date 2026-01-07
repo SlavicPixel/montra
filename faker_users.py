@@ -1,77 +1,49 @@
-#!/usr/bin/env python3
-
 import csv
-import random
 import secrets
 import string
 from faker import Faker
 
-USER_COUNT = 100
-OUTPUT_FILE = "users.csv"
-
 fake = Faker()
+
 
 def generate_password(length: int = 12) -> str:
     alphabet = string.ascii_letters + string.digits + "!@#$%^&*()-_"
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
-def generate_username(first: str, last: str, existing: set) -> str:
+def generate_username(first: str, last: str, used: set) -> str:
     base = f"{first}.{last}".lower().replace(" ", "")
     username = base
-    suffix = 1
+    counter = 1
 
-    while username in existing:
-        username = f"{base}{suffix}"
-        suffix += 1
+    while username in used:
+        username = f"{base}{counter}"
+        counter += 1
 
-    existing.add(username)
+    used.add(username)
     return username
 
 
-def generate_user(used_usernames: set) -> dict:
-    first = fake.first_name()
-    last = fake.last_name()
+def generate_users(user_count: int, output_file: str = "users.csv"):
+    used_usernames = set()
 
-    return {
-        "username": generate_username(first, last, used_usernames),
-        "firstname": first,
-        "lastname": last,
-        "password": generate_password(12),
-        "age": random.randint(18, 90),
-        "address": fake.address().replace("\n", ", "),
-        "email": fake.email(),
-    }
+    with open(output_file, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["username", "firstname", "lastname", "email", "password"],
+        )
+        writer.writeheader()
 
-users = []
-used_usernames = set()
+        for _ in range(user_count):
+            first = fake.first_name()
+            last = fake.last_name()
 
-for _ in range(USER_COUNT):
-    users.append(generate_user(used_usernames))
+            writer.writerow({
+                "username": generate_username(first, last, used_usernames),
+                "firstname": first,
+                "lastname": last,
+                "email": fake.email(),
+                "password": generate_password(),
+            })
 
-with open(OUTPUT_FILE, "w", newline="", encoding="utf-8") as f:
-    writer = csv.DictWriter(
-        f,
-        fieldnames=[
-            "username",
-            "email",
-            "password",
-            "firstname",
-            "lastname",
-            "age",
-            "address",
-        ],
-    )
-    writer.writeheader()
-    for user in users:
-        writer.writerow(user)
-
-print("ALL DONE")
-print(f"Generated {len(users)} users → {OUTPUT_FILE}\n")
-
-for i, u in enumerate(users[:3], start=1):
-    print(
-        f"{i}. {u['username']} "
-        f"({u['firstname']} {u['lastname']}), "
-        f"age={u['age']}, email={u['email']}"
-    )
+    print(f"Generated {user_count} users → {output_file}")

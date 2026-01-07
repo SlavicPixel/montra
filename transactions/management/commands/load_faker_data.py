@@ -3,15 +3,20 @@ import os
 from datetime import datetime
 
 from django.core.management.base import BaseCommand
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 
-from transactions.models import UserProfile, Transaction, Category
+from transactions.models import Transaction, Category  # use new folder
+# from users.models import UserProfile  # not needed if you removed profile fields
 
 USERS_CSV = "users.csv"
 EXPENSES_DIR = "data"
 
+User = get_user_model()
+
 
 class Command(BaseCommand):
+    help = "Import users and their transactions from CSV files"
+
     def handle(self, *args, **options):
         self.stdout.write("Starting import...")
 
@@ -19,7 +24,6 @@ class Command(BaseCommand):
         # USERS
         # ----------------------
         users_to_create = []
-        profiles_to_create = []
         user_rows = list(csv.DictReader(open(USERS_CSV, newline="", encoding="utf-8")))
 
         for row in user_rows:
@@ -30,33 +34,17 @@ class Command(BaseCommand):
                         email=row["email"],
                         first_name=row["firstname"],
                         last_name=row["lastname"],
-                        password=row["password"],  
+                        # password=row["password"],  # optional: set raw passwords here
                     )
                 )
 
-        User.objects.bulk_create(users_to_create, batch_size=1000)
-
-        # Create UserProfiles
-        existing_users = User.objects.filter(username__in=[r["username"] for r in user_rows])
-        username_to_row = {r["username"]: r for r in user_rows}
-
-        for user in existing_users:
-            row = username_to_row[user.username]
-            profiles_to_create.append(
-                UserProfile(
-                    user=user,
-                    age=int(row["age"]),
-                    address=row["address"]
-                )
-            )
-
-        UserProfile.objects.bulk_create(profiles_to_create, batch_size=1000)
+        if users_to_create:
+            User.objects.bulk_create(users_to_create, batch_size=1000)
         self.stdout.write(self.style.SUCCESS(f"{len(users_to_create)} users loaded."))
 
         # ----------------------
         # TRANSACTIONS
         # ----------------------
-        # fetch existing categories once
         existing_categories = {c.name: c for c in Category.objects.all()}
 
         for filename in os.listdir(EXPENSES_DIR):
@@ -78,35 +66,27 @@ class Command(BaseCommand):
 
                 for row in reader:
                     cat_name = row["category"]
-                    if cat_name in existing_categories:
-                        category = existing_categories[cat_name]
-                    else:
-                        category = Category(name=cat_name)
-                        existing_categories[cat_name] = category
+                    category = existing_categories.get(cat_name)
+                    if not category:
+                        self.stdout.write(f"Category {cat_name} not found, skipping row.")
+                        continue
 
                     transactions_to_create.append(
                         Transaction(
                             user=user,
-                            transaction_type=row["transaction_type"],
-                            amount=row["amount"],
-                            category=category,
+                            kind=row["kind"],
+                            title=row["title"],
                             description=row.get("description", ""),
-                            place=row["place"],
+                            amount=float(row["amount"]),
+                            category=category,
                             date=datetime.strptime(row["date"], "%Y-%m-%d").date(),
                         )
                     )
 
-            # bulk insert categories first (samo nove)
-            new_categories = [c for c in existing_categories.values() if c.pk is None]
-            if new_categories:
-                Category.objects.bulk_create(new_categories, batch_size=1000)
-                for c in new_categories:
-                    c.refresh_from_db()  # ensure pk is set
-
-            # bulk insert transactions
-            Transaction.objects.bulk_create(transactions_to_create, batch_size=5000)
-            self.stdout.write(self.style.SUCCESS(
-                f"{len(transactions_to_create)} transactions loaded for {username}"
-            ))
+            if transactions_to_create:
+                Transaction.objects.bulk_create(transactions_to_create, batch_size=5000)
+                self.stdout.write(self.style.SUCCESS(
+                    f"{len(transactions_to_create)} transactions loaded for {username}"
+                ))
 
         self.stdout.write(self.style.SUCCESS("Import finished!"))
