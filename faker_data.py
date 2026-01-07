@@ -3,253 +3,342 @@ import os
 import random
 from datetime import datetime, timedelta
 
-
-USERS_FILE = "users.csv"
-OUTPUT_DIR = "data"
-USERS_TO_PROCESS = 5
-
-MIN_ENTRIES = 10_000
-MAX_ENTRIES = 150_000
-
 START_DATE = datetime(2020, 1, 1)
-END_DATE = datetime(2025, 12, 31)
-
+END_DATE = datetime.now()
 
 CATEGORY_MAP = {
-    "Food": {
-        "places": [
-            "Lidl", "Kaufland", "Spar", "Carrefour", "Aldi",
-            "Local Market", "Butcher Shop", "Fish Market",
-            "Bakery", "Organic Store", "Supermarket",
-            "Restaurant", "Fast Food", "Pizzeria",
-            "Burger Place", "Asian Restaurant",
-            "Italian Restaurant", "Street Food",
-            "Food Truck", "Canteen"
-        ],
-        "descriptions": [
-            "Groceries", "Weekly shopping", "Lunch",
-            "Dinner", "Snack", "Breakfast",
-            "Family meal", "Takeaway",
-            "Fresh vegetables", "Meat purchase",
-            "Seafood", "Frozen food",
-            "Ready meals", "Bulk food",
-            "Organic food", "Late night food",
-            "Quick bite", "Home cooking",
-            "Meal prep", "Party food"
-        ],
-        "amount_range": (5, 180)
+    "Bills & Fees": {
+        "kind": "expense",
+        "amount_range": (20, 400),
+        "entries": [
+            ("Vodafone", "Mobile plan monthly charge by Vodafone"),
+            ("Vodafone", "Vodafone subscription payment"),
+            ("Vodafone", "Vodafone service fee this month"),
+            ("Comcast", "Internet subscription charged by Comcast"),
+            ("Comcast", "Monthly Comcast internet payment"),
+            ("Comcast", "Comcast service monthly fee"),
+            ("City Water", "Water bill monthly payment to City Water"),
+            ("City Water", "City Water monthly service fee"),
+            ("Electric Company", "Electricity bill paid to Electric Company"),
+            ("Electric Company", "Monthly electricity charge by Electric Company"),
+            ("Gas Provider", "Monthly gas bill payment"),
+            ("Gas Provider", "Gas provider service fee"),
+            ("Internet Provider", "Internet subscription charged by ISP"),
+            ("Internet Provider", "Monthly internet provider fee"),
+            ("Insurance Inc.", "Insurance premium payment"),
+            ("Insurance Inc.", "Annual insurance fee"),
+            ("Bank Fee", "Bank account maintenance fee"),
+            ("Bank Fee", "Bank monthly service charge"),
+            ("Streaming Service", "Streaming service monthly subscription"),
+            ("Streaming Service", "Monthly charge for streaming platform"),
+        ]
     },
 
-    "Coffee": {
-        "places": [
-            "Local Coffee Shop", "Cafe Bar", "Espresso Bar",
-            "Coffee Corner", "Coffee House", "Bakery Cafe",
-            "Downtown Cafe", "Neighborhood Cafe",
-            "Specialty Coffee", "Coffee Truck",
-            "Train Station Cafe", "Mall Cafe",
-            "Office Cafe", "Bookstore Cafe",
-            "Coffee Lounge", "Hipster Cafe",
-            "Morning Cafe", "Late Night Cafe",
-            "University Cafe", "Work Cafe"
-        ],
-        "descriptions": [
-            "Espresso", "Latte", "Cappuccino",
-            "Americano", "Flat white", "Iced coffee",
-            "Mocha", "Double espresso",
-            "Coffee to go", "Morning coffee",
-            "Afternoon coffee", "Quick coffee",
-            "Coffee meeting", "Takeaway coffee",
-            "Cold brew", "Specialty coffee",
-            "Coffee with milk", "Black coffee",
-            "Sweet coffee", "Strong coffee"
-        ],
-        "amount_range": (2, 9)
+    "Drinks & Coffee": {
+        "kind": "expense",
+        "amount_range": (2, 10),
+        "entries": [
+            ("Starbucks", "Morning espresso at Starbucks"),
+            ("Starbucks", "Latte from Starbucks"),
+            ("Starbucks", "Cappuccino at Starbucks"),
+            ("Costa Coffee", "Coffee from Costa Coffee"),
+            ("Costa Coffee", "Iced latte at Costa Coffee"),
+            ("Costa Coffee", "Morning coffee at Costa Coffee"),
+            ("Dunkin' Donuts", "Iced coffee from Dunkin' Donuts"),
+            ("Dunkin' Donuts", "Morning espresso at Dunkin' Donuts"),
+            ("Dunkin' Donuts", "Coffee break at Dunkin' Donuts"),
+            ("Local Cafe", "Afternoon coffee at Local Cafe"),
+            ("Local Cafe", "Coffee to go from Local Cafe"),
+            ("Cafe Nero", "Morning cappuccino at Cafe Nero"),
+            ("Cafe Nero", "Latte for work at Cafe Nero"),
+            ("Coffee Bar", "Double espresso at Coffee Bar"),
+            ("Coffee Bar", "Specialty coffee at Coffee Bar"),
+            ("Espresso House", "Morning espresso at Espresso House"),
+            ("Bakery Cafe", "Coffee and pastry at Bakery Cafe"),
+            ("Train Station Cafe", "Quick coffee at Train Station Cafe"),
+            ("Mall Cafe", "Evening coffee at Mall Cafe"),
+            ("Mall Cafe", "Coffee with dessert at Mall Cafe"),
+        ]
+    },
+
+    "Food": {
+        "kind": "expense",
+        "amount_range": (8, 120),
+        "entries": [
+            ("McDonald's", "Lunch at McDonald's"),
+            ("McDonald's", "Dinner at McDonald's"),
+            ("McDonald's", "Takeaway from McDonald's"),
+            ("Burger King", "Lunch at Burger King"),
+            ("Burger King", "Dinner at Burger King"),
+            ("Burger King", "Takeaway from Burger King"),
+            ("KFC", "Chicken meal at KFC"),
+            ("KFC", "Family dinner at KFC"),
+            ("Subway", "Subway sandwich for lunch"),
+            ("Subway", "Dinner from Subway"),
+            ("Pizza Hut", "Pizza order from Pizza Hut"),
+            ("Pizza Hut", "Family meal at Pizza Hut"),
+            ("Domino's", "Pizza delivery from Domino's"),
+            ("Domino's", "Lunch from Domino's"),
+            ("Local Restaurant", "Dinner at local restaurant"),
+            ("Local Restaurant", "Lunch at local restaurant"),
+            ("Food Truck", "Lunch from food truck"),
+            ("Italian Bistro", "Dinner at Italian bistro"),
+            ("Asian Eatery", "Dinner at Asian eatery"),
+            ("Asian Eatery", "Lunch at Asian eatery"),
+        ]
+    },
+
+    "Groceries": {
+        "kind": "expense",
+        "amount_range": (10, 250),
+        "entries": [
+            ("Lidl", "Weekly grocery shopping at Lidl"),
+            ("Lidl", "Fresh produce from Lidl"),
+            ("Kaufland", "Monthly household supplies at Kaufland"),
+            ("Kaufland", "Grocery shopping at Kaufland"),
+            ("Aldi", "Weekly groceries from Aldi"),
+            ("Aldi", "Fresh food shopping at Aldi"),
+            ("Spar", "Weekly groceries at Spar"),
+            ("Spar", "Vegetables and fruits from Spar"),
+            ("Carrefour", "Supermarket shopping at Carrefour"),
+            ("Carrefour", "Weekly grocery trip to Carrefour"),
+            ("Local Market", "Vegetables from local market"),
+            ("Local Market", "Fresh produce at local market"),
+            ("Butcher Shop", "Meat purchase at butcher shop"),
+            ("Butcher Shop", "Weekly meat supply from butcher"),
+            ("Bakery", "Fresh bread at bakery"),
+            ("Bakery", "Pastry purchase at bakery"),
+            ("Supermarket", "Grocery run at supermarket"),
+            ("Supermarket", "Weekly household items at supermarket"),
+            ("Organic Store", "Organic food shopping at Organic Store"),
+            ("Organic Store", "Weekly organic grocery from Organic Store"),
+        ]
     },
 
     "Transport": {
-        "places": [
-            "Gas Station", "Shell", "BP", "OMV",
-            "Taxi", "Uber", "Bolt",
-            "Bus Station", "Train Station",
-            "Metro", "Parking Garage",
-            "Car Wash", "Highway Toll",
-            "Ferry", "Airport Transport",
-            "Scooter Rental", "Bike Rental",
-            "Car Rental", "Public Transport",
-            "Fuel Station"
-        ],
-        "descriptions": [
-            "Fuel", "Taxi ride", "Bus ticket",
-            "Train ticket", "Metro ticket",
-            "Parking fee", "Car wash",
-            "Highway toll", "Airport transfer",
-            "Ride sharing", "Monthly pass",
-            "Single ride", "Vehicle rental",
-            "Scooter ride", "Bike ride",
-            "Commute", "Long distance travel",
-            "Short trip", "Emergency ride",
-            "Transport service"
-        ],
-        "amount_range": (2, 140)
+        "kind": "expense",
+        "amount_range": (2, 150),
+        "entries": [
+            ("Uber", "Uber ride for commute"),
+            ("Uber", "Uber ride home"),
+            ("Bolt", "Bolt ride for commute"),
+            ("Bolt", "Bolt ride home"),
+            ("Taxi", "Taxi to office"),
+            ("Taxi", "Taxi home from work"),
+            ("BP", "Fuel refill at BP"),
+            ("BP", "Monthly gas at BP"),
+            ("Shell", "Fuel refill at Shell"),
+            ("Shell", "Monthly gas at Shell"),
+            ("Train Station", "Train ticket for commute"),
+            ("Train Station", "Train trip to city"),
+            ("Bus Station", "Bus ticket purchase"),
+            ("Bus Station", "Monthly bus pass"),
+            ("Metro", "Metro monthly pass"),
+            ("Metro", "Single metro trip"),
+            ("Parking Garage", "Parking fee at garage"),
+            ("Parking Garage", "Hourly parking at garage"),
+            ("Car Rental", "Car rental for weekend trip"),
+            ("Car Rental", "Business car rental"),
+        ]
     },
 
-    "Shopping": {
-        "places": [
-            "Shopping Mall", "Clothing Store",
-            "Electronics Store", "Online Shop",
-            "Department Store", "Outlet Store",
-            "Shoe Store", "Fashion Boutique",
-            "Tech Store", "Mobile Shop",
-            "Home Store", "Furniture Store",
-            "Accessory Shop", "Gift Shop",
-            "Bookstore", "Toy Store",
-            "Sports Store", "Jewelry Store",
-            "Discount Store", "Retail Shop"
-        ],
-        "descriptions": [
-            "Clothes", "Shoes", "Electronics",
-            "Accessories", "Gifts", "Household items",
-            "New phone", "Computer equipment",
-            "Fashion items", "Office supplies",
-            "Books", "Toys", "Furniture",
-            "Decorations", "Seasonal shopping",
-            "Personal items", "Online order",
-            "Replacement item", "Impulse buy",
-            "Big purchase"
-        ],
-        "amount_range": (15, 1200)
+    "Salary": {
+        "kind": "income",
+        "amount_range": (800, 6000),
+        "entries": [
+            ("Company Payroll", "Company payroll monthly salary"),
+            ("Company Payroll", "Salary credited from Company Payroll"),
+            ("Employer", "Salary payment from employer"),
+            ("Employer", "Monthly salary deposit from employer"),
+            ("Work Contract", "Work contract salary payment"),
+            ("Salary Deposit", "Monthly salary deposit"),
+            ("Monthly Salary", "Monthly salary credited"),
+            ("Bonus Payment", "Bonus payment from employer"),
+            ("HR Payroll", "HR payroll deposit"),
+            ("Salary Payout", "Salary payout for work done"),
+            ("Net Salary", "Net salary credited"),
+            ("Wages", "Wages credited for work"),
+            ("Company Payroll", "Payroll including bonus"),
+            ("Employer", "Employer salary deposit"),
+            ("Monthly Salary", "Salary including overtime"),
+            ("HR Payroll", "HR salary payment"),
+            ("Salary Deposit", "Salary deposit for month"),
+            ("Bonus Payment", "Year-end bonus from employer"),
+            ("Net Salary", "Net salary for month"),
+            ("Wages", "Monthly wages credited"),
+        ]
     },
 
-    "Bills": {
-        "places": [
-            "Electric Company", "Water Utility",
-            "Gas Provider", "Internet Provider",
-            "Mobile Operator", "Telecom Provider",
-            "Utility Office", "Energy Provider",
-            "Waste Management", "City Services",
-            "Heating Provider", "TV Provider",
-            "Streaming Service", "Cloud Service",
-            "Subscription Service", "Hosting Provider",
-            "Insurance Office", "Bank Service",
-            "Property Management", "Service Provider"
-        ],
-        "descriptions": [
-            "Electricity bill", "Water bill",
-            "Gas bill", "Internet bill",
-            "Mobile plan", "TV subscription",
-            "Streaming subscription", "Cloud service",
-            "Insurance payment", "Maintenance fee",
-            "Monthly bill", "Service charge",
-            "Utility payment", "Annual fee",
-            "Contract payment", "Renewal fee",
-            "Late fee", "Adjustment charge",
-            "Extra service", "Recurring payment"
-        ],
-        "amount_range": (20, 350)
+    "Freelance": {
+        "kind": "income",
+        "amount_range": (100, 8000),
+        "entries": [
+            ("Client Payment", "Freelance project payment"),
+            ("Client Payment", "Payment from client invoice"),
+            ("Freelance Project", "Freelance project income"),
+            ("Freelance Project", "Payment for freelance work"),
+            ("Upwork", "Payment from Upwork project"),
+            ("Upwork", "Freelance income via Upwork"),
+            ("Fiverr", "Freelance job payment via Fiverr"),
+            ("Fiverr", "Payment for Fiverr project"),
+            ("Freelance Contract", "Freelance contract payment"),
+            ("Freelance Contract", "Contracted freelance work payment"),
+            ("Consulting Client", "Consulting project payment"),
+            ("Consulting Client", "Payment from consulting client"),
+            ("Remote Project", "Remote freelance project income"),
+            ("Remote Project", "Payment for remote work"),
+            ("Side Project", "Side project payment"),
+            ("Side Project", "Freelance side job payment"),
+            ("Professional Services", "Payment for professional services"),
+            ("Professional Services", "Professional freelance income"),
+            ("Freelance Job", "One-time freelance job income"),
+            ("Freelance Job", "Payment for freelance job"),
+        ]
     },
 
-    "Health": {
-        "places": [
-            "Pharmacy", "Clinic", "Hospital",
-            "Private Doctor", "Dental Clinic",
-            "Optician", "Medical Center",
-            "Laboratory", "Health Center",
-            "Physiotherapy", "Wellness Center",
-            "Medical Store", "Emergency Room",
-            "Specialist Clinic", "Dermatology Clinic",
-            "Orthopedic Clinic", "Eye Clinic",
-            "Mental Health Clinic", "Health Shop",
-            "Rehab Center"
-        ],
-        "descriptions": [
-            "Medication", "Doctor visit",
-            "Dental check", "Medical exam",
-            "Prescription drugs", "Vitamins",
-            "Medical tests", "Lab analysis",
-            "Therapy session", "Health consultation",
-            "Emergency visit", "Follow-up visit",
-            "Treatment", "Specialist visit",
-            "Health supplies", "Medical equipment",
-            "Routine check", "Vaccination",
-            "Health service", "Medical care"
-        ],
-        "amount_range": (5, 400)
+    "Investments": {
+        "kind": "income",
+        "amount_range": (50, 15000),
+        "entries": [
+            ("Robinhood", "Stock dividend payout from Robinhood"),
+            ("Robinhood", "Investment gains from Robinhood"),
+            ("Coinbase", "Crypto investment gains from Coinbase"),
+            ("Coinbase", "Crypto profit from Coinbase"),
+            ("Stock Portfolio", "Stock portfolio profit"),
+            ("Stock Portfolio", "Capital gains from stocks"),
+            ("ETF Dividend", "ETF dividend payout"),
+            ("ETF Dividend", "Dividend received from ETF"),
+            ("Investment Account", "Profit from investment account"),
+            ("Investment Account", "Investment gains"),
+            ("Crypto Gains", "Crypto portfolio profit"),
+            ("Crypto Gains", "Crypto investment income"),
+            ("Brokerage", "Brokerage account gains"),
+            ("Brokerage", "Brokerage profit from investments"),
+            ("Capital Gains", "Capital gains realized"),
+            ("Capital Gains", "Profits from capital investments"),
+            ("Dividend Payout", "Dividend income received"),
+            ("Dividend Payout", "Dividend payout from portfolio"),
+            ("Asset Return", "Asset investment return"),
+            ("Asset Return", "Investment asset profit"),
+        ]
     },
 
-    "Entertainment": {
-        "places": [
-            "Cinema", "Theater", "Concert Hall",
-            "Music Club", "Streaming Platform",
-            "Gaming Store", "Arcade",
-            "Bowling Alley", "Escape Room",
-            "Museum", "Gallery",
-            "Amusement Park", "Festival",
-            "Event Venue", "Sports Arena",
-            "Night Club", "Bar",
-            "Online Platform", "Subscription Service",
-            "Leisure Center"
-        ],
-        "descriptions": [
-            "Movie ticket", "Concert ticket",
-            "Theater play", "Streaming subscription",
-            "Game purchase", "Arcade games",
-            "Bowling", "Escape room",
-            "Museum entry", "Festival ticket",
-            "Event entry", "Sports event",
-            "Night out", "Club entry",
-            "Entertainment fee", "Leisure activity",
-            "Online content", "Digital purchase",
-            "Weekend fun", "Evening entertainment"
-        ],
-        "amount_range": (7, 250)
+    "Refunds": {
+        "kind": "income",
+        "amount_range": (5, 2000),
+        "entries": [
+            ("Amazon Refund", "Refund for returned Amazon item"),
+            ("Amazon Refund", "Amazon purchase refund"),
+            ("Zalando Refund", "Refund from Zalando"),
+            ("Zalando Refund", "Zalando return refund"),
+            ("Store Refund", "Refund from store purchase"),
+            ("Store Refund", "Store returned item refund"),
+            ("Service Refund", "Service refund received"),
+            ("Service Refund", "Refund for cancelled service"),
+            ("Subscription Refund", "Subscription refund credited"),
+            ("Subscription Refund", "Refund for subscription"),
+            ("Payment Reversal", "Payment reversal refund"),
+            ("Payment Reversal", "Transaction reversed"),
+            ("Returned Item", "Refund for returned item"),
+            ("Returned Item", "Item return refund"),
+            ("Tax Refund", "Tax refund payment received"),
+            ("Tax Refund", "Annual tax refund"),
+            ("Overpayment Refund", "Overpayment refund credited"),
+            ("Overpayment Refund", "Excess payment refunded"),
+            ("Misc Refund", "Miscellaneous refund"),
+            ("Misc Refund", "Refund from miscellaneous transaction"),
+        ]
+    },
+
+    "Unspecified": {
+        "kind": "random",
+        "amount_range": (1, 3000),
+        "entries": [
+            ("Unspecified", "Uncategorized transaction"),
+            ("Other Transaction", "Unknown payment source"),
+            ("Miscellaneous", "Miscellaneous transaction"),
+            ("Unknown", "Unidentified charge"),
+            ("General Payment", "General account activity"),
+            ("Other Income", "Unspecified income transaction"),
+            ("Other Expense", "Unspecified expense transaction"),
+            ("Uncategorized", "Unclassified account movement"),
+            ("Unknown Activity", "Unknown transaction detail"),
+            ("Other", "Other miscellaneous payment"),
+            ("Unspecified", "Transaction with unknown category"),
+            ("Other Transaction", "Generic transaction"),
+            ("Miscellaneous", "Other uncategorized transaction"),
+            ("Unknown", "Unknown financial movement"),
+            ("General Payment", "General financial transaction"),
+            ("Other Income", "Income not categorized"),
+            ("Other Expense", "Expense not categorized"),
+            ("Uncategorized", "Unspecified activity"),
+            ("Unknown Activity", "Misc transaction"),
+            ("Other", "Other financial operation"),
+        ]
     }
 }
 
 
-def random_date_2020_2025():
+
+def random_date():
     delta_days = (END_DATE - START_DATE).days
     return (START_DATE + timedelta(days=random.randint(0, delta_days))).strftime("%Y-%m-%d")
 
+def generate_user_data(
+    users_file: str,
+    output_dir: str,
+    users_to_process: int,
+    min_entries: int,
+    max_entries: int,
+):
+    with open(users_file, newline="", encoding="utf-8") as f:
+        users = list(csv.DictReader(f))
 
-with open(USERS_FILE, newline="", encoding="utf-8") as f:
-    users = list(csv.DictReader(f))
+    selected_users = random.sample(users, users_to_process)
+    os.makedirs(output_dir, exist_ok=True)
 
-selected_users = random.sample(users, USERS_TO_PROCESS)
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+    for user in selected_users:
+        username = user["username"]
+        entry_count = random.randint(min_entries, max_entries)
 
-for user in selected_users:
-    username = user["username"]
-    entry_count = random.randint(MIN_ENTRIES, MAX_ENTRIES)
+        output_file = os.path.join(output_dir, f"{username}_data.csv")
+        print(f"Generating {entry_count} rows for {username}")
 
-    output_file = os.path.join(OUTPUT_DIR, f"{username}_data.csv")
-    print(f"Generating {entry_count} rows for {username}")
-
-    with open(output_file, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            "username",
-            "transaction_type",
-            "amount",
-            "category",
-            "description",
-            "place",
-            "date"
-        ])
-
-        for _ in range(entry_count):
-            category = random.choice(list(CATEGORY_MAP.keys()))
-            meta = CATEGORY_MAP[category]
-
+        with open(output_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
             writer.writerow([
-                username,
-                random.choice(["card", "cash"]),
-                round(random.uniform(*meta["amount_range"]), 2),
-                category,
-                random.choice(meta["descriptions"]),
-                random.choice(meta["places"]),
-                random_date_2020_2025()
+                "username",
+                "kind",
+                "title",
+                "amount",
+                "description",
+                "date",
+                "category"
             ])
 
-    print(f"Saved → {output_file}")
+            for _ in range(entry_count):
+                category = random.choice(list(CATEGORY_MAP.keys()))
+                meta = CATEGORY_MAP[category]
 
-print("ALL DONE")
+                # Pick a random (title, description) tuple
+                title, description = random.choice(meta["entries"])
+
+                kind = (
+                    random.choice(["expense", "income"])
+                    if meta["kind"] == "random"
+                    else meta["kind"]
+                )
+
+                amount = round(random.uniform(*meta["amount_range"]), 2)
+
+                writer.writerow([
+                    username,
+                    kind,
+                    title,
+                    amount,
+                    description,
+                    random_date(),
+                    category
+                ])
+
+        print(f"Saved → {output_file}")
