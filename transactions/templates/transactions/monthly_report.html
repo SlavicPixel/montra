@@ -1,0 +1,105 @@
+{% extends "transactions/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-0">Monthly Report</h2>
+      <div class="text-muted small">
+        {{ year }}-{{ month|stringformat:"02d" }} • Source: <span class="fw-semibold">{{ source }}</span>
+        {% if computed_at %} • computed_at: {{ computed_at }}{% endif %}
+      </div>
+    </div>
+
+    <a href="{% url 'transaction-list' %}" class="btn btn-outline-secondary">
+      Back to Transactions
+    </a>
+  </div>
+
+  <form method="get" class="mb-4">
+    <div class="row g-2 align-items-end">
+      <div class="col-6 col-md-3">
+        <label class="form-label mb-1">Year</label>
+        <input type="number" name="year" class="form-control" value="{{ year }}" min="2000" max="2100">
+      </div>
+      <div class="col-6 col-md-3">
+        <label class="form-label mb-1">Month</label>
+        <input type="number" name="month" class="form-control" value="{{ month }}" min="1" max="12">
+      </div>
+      <div class="col-12 col-md-3">
+        <button class="btn btn-primary w-100" type="submit">Load report</button>
+      </div>
+      <div class="col-12 col-md-3">
+        <a class="btn btn-outline-secondary w-100" href="?year={{ year }}&month={{ month }}">
+          Reset
+        </a>
+      </div>
+    </div>
+  </form>
+
+  {% if rows %}
+    <div class="row g-4">
+      <div class="col-12 col-lg-6">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Spending by category</h5>
+            <div style="height: 340px;">
+              <canvas id="spendPie"></canvas>
+            </div>
+            <div class="text-muted small mt-2">
+              Pie chart shows <b>total expense</b> per category for the selected month.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Breakdown</h5>
+            <table class="table table-striped align-middle">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th class="text-end">Total</th>
+                  <th class="text-end">Average</th>
+                  <th class="text-end">Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in rows %}
+                <tr>
+                  <td>{{ r.category_name }}</td>
+                  <td class="text-end">{{ r.total_amount }}</td>
+                  <td class="text-end">{{ r.avg_amount }}</td>
+                  <td class="text-end">{{ r.tx_count }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <div class="text-muted small">
+              Tip: run Spark job then reload to see <b>precomputed</b> source.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {# JSON payload for JS (safe & simple) #}
+    {{ rows|json_script:"report-rows" }}
+
+  {% else %}
+    <div class="text-center">
+      <h4 class="mt-4">No data for this month</h4>
+      <div class="text-muted">Try another month/year, or add transactions.</div>
+    </div>
+  {% endif %}
+</div>
+{% endblock content %}
+
+{% block javascript %}
+  <script src="{% static "montra/vendor/chart.js/Chart.min.js" %}"></script>
+  <script src="{% static "montra/js/report_pie.js" %}"></script>
+{% endblock javascript %}
