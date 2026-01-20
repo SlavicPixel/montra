@@ -49,3 +49,31 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.user} | {self.kind} | {self.amount} | {self.category}"
+
+class MonthlyCategoryReport(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.PROTECT)
+
+    year = models.IntegerField()
+    month = models.IntegerField()
+
+    total_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
+    avg_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
+    tx_count = models.IntegerField(default=0)
+
+    computed_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "category", "year", "month"],
+                name="uniq_monthly_report_user_category_period",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["user", "year", "month"]),
+            models.Index(fields=["category"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} {self.category_id} {self.year}-{self.month:02d}"
