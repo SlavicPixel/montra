@@ -12,6 +12,9 @@ from .reports import get_monthly_category_report
 from montra.exchange_rates import get_latest_rates, get_top_rates, TOP_CURRENCIES
 
 from datetime import datetime, timezone
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 @login_required
 def dashboard_view(request):
@@ -179,12 +182,17 @@ def currency_dashboard(request):
             tz=timezone.utc,
         )
 
+    logger.info(
+    "Monthly report requested",
+    extra={"user_id": request.user.id, "report": "monthly_category"}
+    )
+
     return render(request, "transactions/currency_dashboard.html", {
         "base": data.get("base", base),
         "rows": rows,
         "source": data.get("source"),
         "timestamp": data.get("timestamp"),
-        "currencies": [data.get("base", base)] + TOP_CURRENCIES,  # for calculator dropdowns
+        "currencies": [data.get("base", base)] + TOP_CURRENCIES,
         "rates_dict": rates,
         "updated_at": updated_at,
     })

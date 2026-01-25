@@ -13,6 +13,11 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - montra_net
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "postgres"
 
   db:
     image: postgres:15
@@ -25,7 +30,57 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - montra_net
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "postgres"
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms768m -Xmx768m
+    ports:
+      - "9200:9200"
+    networks:
+      - montra_net
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:9.2.4
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "12201:12201/udp"   # GELF input
+    networks:
+      - montra_net
+    volumes:
+      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+    environment:
+      - LS_JAVA_OPTS=-Xms256m -Xmx256m
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.2.4
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - montra_net
+  
   migrate:
     build: .
     depends_on:
@@ -100,6 +155,11 @@ services:
       - "traefik.http.routers.montra.rule=Host(`localhost`)"
       - "traefik.http.routers.montra.entrypoints=web"
       - "traefik.http.services.montra.loadbalancer.server.port=8000"
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "web"
     networks:
       - montra_net
 
@@ -121,15 +181,26 @@ services:
     networks:
       - montra_net
     restart: "no"
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "spark_job"
 
   redis:
     image: redis:7-alpine
     restart: always
     networks:
       - montra_net
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "redis"
 
 volumes:
   postgres_data:
+  es_data:
 
 networks:
   montra_net:
