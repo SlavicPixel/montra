@@ -84,6 +84,9 @@ services:
       DJANGO_SECRET_KEY: "django-insecure-=jqx=1*u8ws909jm-dtp4wlw^8@5pcv$2)no-71%pb3=b83_!u"
       DJANGO_DEBUG: "1"
       ALLOWED_HOSTS: "localhost,127.0.0.1"
+      REDIS_URL: "redis://redis:6379/1"
+      EXCHANGERATE_API_KEY: "${EXCHANGERATE_API_KEY:-}"
+      EXCHANGE_RATE_TTL: "3600"
     command: >
       sh -c "
       gunicorn montra.wsgi:application
@@ -118,6 +121,12 @@ services:
     networks:
       - montra_net
     restart: "no"
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - montra_net
 
 volumes:
   postgres_data:
