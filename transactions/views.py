@@ -9,6 +9,9 @@ from django.db.models import Q, Sum, Avg, Count
 from .forms import TransactionForm
 from .models import Transaction, MonthlyCategoryReport
 from .reports import get_monthly_category_report
+from montra.exchange_rates import get_latest_rates, get_top_rates, TOP_CURRENCIES
+
+from datetime import datetime, timezone
 
 @login_required
 def dashboard_view(request):
@@ -149,3 +152,39 @@ def monthly_category_report(request):
     ]
 
     return JsonResponse({"source": "dynamic", "year": year, "month": month, "data": data})
+
+@login_required
+def exchange_rates_api(request):
+    base = request.GET.get("base", "EUR")
+    symbols = request.GET.get("symbols", "USD").split(",")
+    data = get_latest_rates(base=base, symbols=symbols)
+    return JsonResponse(data)
+
+@login_required
+def currency_dashboard(request):
+    base = request.GET.get("base", "EUR").upper()
+    data = get_top_rates(base=base)  # returns {base, rates, timestamp, source}
+
+    # rates dict -> list for table
+    rows = []
+    rates = data.get("rates") or {}
+    for c in TOP_CURRENCIES:
+        if c in rates:
+            rows.append({"currency": c, "rate": rates[c]})
+
+    updated_at = None
+    if data.get("timestamp"):
+        updated_at = datetime.fromtimestamp(
+            int(data["timestamp"]),
+            tz=timezone.utc,
+        )
+
+    return render(request, "transactions/currency_dashboard.html", {
+        "base": data.get("base", base),
+        "rows": rows,
+        "source": data.get("source"),
+        "timestamp": data.get("timestamp"),
+        "currencies": [data.get("base", base)] + TOP_CURRENCIES,  # for calculator dropdowns
+        "rates_dict": rates,
+        "updated_at": updated_at,
+    })
