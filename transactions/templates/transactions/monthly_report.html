@@ -72,16 +72,13 @@
                 <tr>
                   <td>{{ r.category_name }}</td>
                   <td class="text-end">{{ r.total_amount }}</td>
-                  <td class="text-end">{{ r.avg_amount }}</td>
+                  <td class="text-end">{{ r.avg_amount|floatformat:2 }}</td>
                   <td class="text-end">{{ r.tx_count }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
 
-            <div class="text-muted small">
-              Tip: run Spark job then reload to see <b>precomputed</b> source.
-            </div>
           </div>
         </div>
       </div>
