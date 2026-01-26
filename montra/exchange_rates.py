@@ -4,7 +4,7 @@ from django.core.cache import cache
 
 API_BASE = "https://api.exchangerate.host"
 ACCESS_KEY = os.environ.get("EXCHANGERATE_API_KEY")
-DEFAULT_TTL = int(os.environ.get("EXCHANGE_RATE_TTL", "3600"))
+DEFAULT_TTL = int(os.environ.get("EXCHANGE_RATE_TTL", "28800"))
 
 TOP_CURRENCIES = ["USD", "GBP", "CHF", "JPY", "AUD", "CAD", "SEK", "NOK", "CZK", "PLN"]
 

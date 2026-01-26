@@ -1,3 +1,22 @@
+x-airflow-env: &airflow_env
+  AIRFLOW__CORE__EXECUTOR: LocalExecutor
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow_db:5432/airflow
+  AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+
+  AIRFLOW__CORE__AUTH_MANAGER: airflow.api_fastapi.auth.managers.simple.simple_auth_manager.SimpleAuthManager
+  AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: "admin:admin,viewer:viewer"
+  AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "true"
+
+  AIRFLOW__CORE__EXECUTION_API_SERVER_URL: "http://airflow-api-server:8080/execution"
+
+  AIRFLOW__API_AUTH__JWT_SECRET: "QSqUagxVzwwduL9ML5VDysN81O8T8qta3_x2R9tEBBoe6lCWq5MphopUS8TIyerV"
+
+  PIP_ADDITIONAL_REQUIREMENTS: "apache-airflow-providers-docker"
+
+  AIRFLOW__CORE__PARALLELISM: "4"
+  AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: "2"
+  AIRFLOW__SCHEDULER__MAX_TIS_PER_QUERY: "8"
+
 services:
   traefik:
     image: traefik:v3.6.7
@@ -198,10 +217,111 @@ services:
         gelf-address: "udp://127.0.0.1:12201"
         tag: "redis"
 
+  airflow_db:
+    image: postgres:15
+    container_name: airflow_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    networks:
+      - montra_net
+
+  airflow-init:
+    image: apache/airflow:3.1.6
+    container_name: airflow-init
+    depends_on:
+      - airflow_db
+    restart: "no"
+    environment: *airflow_env
+    user: "${AIRFLOW_UID:-50000}:0"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    command: ["airflow", "db", "migrate"]
+    networks:
+      - montra_net
+
+  airflow-api-server:
+    image: apache/airflow:3.1.6
+    container_name: airflow-api-server
+    depends_on:
+      - airflow-init
+    restart: unless-stopped
+    environment: *airflow_env
+    user: "${AIRFLOW_UID:-50000}:0"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8081:8080"
+    command: ["airflow", "api-server", "--apps", "all"]
+    networks:
+      - montra_net
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "airflow_api_server"
+
+  airflow-scheduler:
+    image: apache/airflow:3.1.6
+    container_name: airflow-scheduler
+    depends_on:
+      - airflow-init
+      - airflow-api-server
+    restart: unless-stopped
+    environment: *airflow_env
+    user: "0:0" # da, znam, opaki security risk u produkciji, ali je okej za dev
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["airflow", "scheduler"]
+    networks:
+      - montra_net
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "airflow_scheduler"
+
+  airflow-dag-processor:
+    image: apache/airflow:3.1.6
+    container_name: airflow-dag-processor
+    depends_on:
+      - airflow-init
+      - airflow-api-server
+    restart: unless-stopped
+    environment: *airflow_env
+    user: "${AIRFLOW_UID:-50000}:0"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    command: ["airflow", "dag-processor"]
+    networks:
+      - montra_net
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "airflow_dag_processor"
+
+
 volumes:
   postgres_data:
   es_data:
+  airflow_postgres_data:
 
 networks:
   montra_net:
+    name: montra_net
     driver: bridge

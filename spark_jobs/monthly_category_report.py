@@ -1,7 +1,12 @@
 import os
 import sys
+from datetime import datetime, timezone
 from pyspark.sql import SparkSession, functions as F
 import psycopg2
+
+def log(msg: str):
+    ts = datetime.now(timezone.utc).isoformat()
+    print(f"[spark_job] {ts} | {msg}", flush=True)
 
 def truncate_output_table():
     conn = psycopg2.connect(
@@ -13,8 +18,23 @@ def truncate_output_table():
     )
     conn.autocommit = True
     with conn.cursor() as cur:
-        # RESTART IDENTITY resetira sequence za id (čisto za admin/debug)
         cur.execute(f"TRUNCATE TABLE {OUT_TABLE} RESTART IDENTITY;")
+    conn.close()
+
+def delete_period_from_output_table(year: int, month: int):
+    conn = psycopg2.connect(
+        host=PG_HOST,
+        port=PG_PORT,
+        dbname=PG_DB,
+        user=PG_USER,
+        password=PG_PASS,
+    )
+    conn.autocommit = True
+    with conn.cursor() as cur:
+        cur.execute(
+            f"DELETE FROM {OUT_TABLE} WHERE year = %s AND month = %s;",
+            (year, month),
+        )
     conn.close()
 
 PG_HOST = os.environ.get("POSTGRES_HOST", "db")
@@ -51,17 +71,22 @@ spark.conf.set("spark.sql.shuffle.partitions", str(max(NUM_PARTITIONS, 8)))
 # Build SQL source: filter expense in SQL (smaller read)
 where_clauses = ["kind = 'expense'"]
 if REPORT_YEAR and REPORT_MONTH:
-    try:
-        y = int(REPORT_YEAR)
-        m = int(REPORT_MONTH)
-        if m < 1 or m > 12:
-            raise ValueError("REPORT_MONTH must be 1-12")
-    except Exception as e:
-        log(f"Invalid REPORT_YEAR/REPORT_MONTH: {e}")
-        sys.exit(2)
+    y = int(REPORT_YEAR)
+    m = int(REPORT_MONTH)
 
-    where_clauses.append(f"EXTRACT(YEAR FROM date) = {y}")
-    where_clauses.append(f"EXTRACT(MONTH FROM date) = {m}")
+    log(f"Mode: MONTHLY_REFRESH year={y} month={m:02d}")
+    log(f"Deleting existing rows for {y}-{m:02d} from {OUT_TABLE}")
+
+    delete_period_from_output_table(y, m)
+
+    log(f"Computing aggregates for {y}-{m:02d}")
+else:
+    log("Mode: FULL_REFRESH (all months)")
+    log(f"Truncating output table {OUT_TABLE}")
+
+    truncate_output_table()
+
+    log("Computing aggregates for all months")
 
 where_sql = " AND ".join(where_clauses)
 TX_SRC = f"(SELECT id, user_id, category_id, amount, date FROM {TX_TABLE} WHERE {where_sql}) AS tx"
