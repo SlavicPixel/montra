@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.cache import cache
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.http import JsonResponse
@@ -11,6 +12,13 @@ from django.db.models.functions import Coalesce
 from .forms import TransactionForm
 from .models import Transaction, MonthlyCategoryReport
 from .reports import get_monthly_category_report
+from .services.dashboard import compute_dashboard_context
+from .services.dashboard_cache import (
+    make_dash_cache_key,
+    make_lock_key,
+    TTL_SECONDS,
+    LOCK_TTL,
+)
 from montra.exchange_rates import get_latest_rates, get_top_rates, TOP_CURRENCIES
 
 from datetime import datetime, timezone, date
@@ -22,85 +30,26 @@ logger = getLogger(__name__)
 @login_required
 def dashboard_view(request):
     now = dj_timezone.localtime()
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    ym = now.strftime("%Y-%m")
 
-    if month_start.month == 12:
-        next_month_start = month_start.replace(year=month_start.year + 1, month=1)
-    else:
-        next_month_start = month_start.replace(month=month_start.month + 1)
+    cache_key = make_dash_cache_key(request.user.id, ym)
+    cached = cache.get(cache_key)
+    if cached:
+        return render(request, "transactions/dashboard.html", cached)
 
-    month_qs = Transaction.objects.filter(
-        user=request.user,
-        date__gte=month_start.date(),
-        date__lt=next_month_start.date(),
-    ).select_related("category")
+    lock_key = make_lock_key(request.user.id, ym)
+    got_lock = cache.add(lock_key, "1", timeout=LOCK_TTL)
 
-    zero_decimal = Value(
-        Decimal("0.00"),
-        output_field=DecimalField(max_digits=10, decimal_places=2),
-    )
+    if not got_lock:
+        context = compute_dashboard_context(request.user)
+        return render(request, "transactions/dashboard.html", context)
 
-    income_total = month_qs.filter(kind="income").aggregate(
-        total=Coalesce(Sum("amount"), zero_decimal)
-    )["total"]
-
-    expense_total = month_qs.filter(kind="expense").aggregate(
-        total=Coalesce(Sum("amount"), zero_decimal)
-    )["total"]
-
-    net_total = income_total - expense_total
-
-    expense_by_cat = (
-        month_qs.filter(kind="expense")
-        .values("category__name")
-        .annotate(total=Coalesce(Sum("amount"), zero_decimal))
-        .order_by("-total")
-    )
-
-    income_by_cat = (
-        month_qs.filter(kind="income")
-        .values("category__name")
-        .annotate(total=Coalesce(Sum("amount"), zero_decimal))
-        .order_by("-total")
-    )
-
-    def top_n_plus_other(rows, n=6, other_label="Other"):
-        rows = list(rows)
-        top = rows[:n]
-
-        other_sum = sum(
-            (r["total"] for r in rows[n:]),
-            start=Decimal("0.00"),
-        )
-
-        if other_sum > 0:
-            top.append({"category__name": other_label, "total": other_sum})
-
-        labels = [r["category__name"] or "Uncategorized" for r in top]
-        values = [float(r["total"]) for r in top]
-        return labels, values
-
-    exp_labels, exp_values = top_n_plus_other(expense_by_cat)
-    inc_labels, inc_values = top_n_plus_other(income_by_cat)
-
-    recent = (
-        Transaction.objects.filter(user=request.user)
-        .select_related("category")
-        .order_by("-date", "-id")[:10]
-    )
-
-    context = {
-        "month_label": month_start.strftime("%B %Y"),
-        "income_total": income_total,
-        "expense_total": expense_total,
-        "net_total": net_total,
-        "exp_labels": exp_labels,
-        "exp_values": exp_values,
-        "inc_labels": inc_labels,
-        "inc_values": inc_values,
-        "recent": recent,
-    }
-    return render(request, "transactions/dashboard.html", context)
+    try:
+        context = compute_dashboard_context(request.user)
+        cache.set(cache_key, context, timeout=TTL_SECONDS)
+        return render(request, "transactions/dashboard.html", context)
+    finally:
+        cache.delete(lock_key)
 
 
 class TransactionListView(LoginRequiredMixin, ListView):
