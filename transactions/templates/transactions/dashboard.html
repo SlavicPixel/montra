@@ -2,8 +2,161 @@
 {% load static %}
 {% block content %}
 
+<div class="container-fluid">
+
+  <div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="h3 mb-0 text-gray-800">Hi, {{ user.first_name }}</h1>
+      <small class="text-muted">{{ month_label }}</small>
+    </div>
+
+    <div>
+      <a class="btn btn-primary mr-2" href="{% url 'transaction-create' %}">+ New transaction</a>
+      <a class="btn btn-info" href="{% url 'transaction-list' %}">All transactions</a>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="row">
+
+    <div class="col-xl-4 col-md-6 mb-4">
+      <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Income (this month)</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">{{ income_total|floatformat:2 }}</div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-arrow-down fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+      <div class="card border-left-danger shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Expenses (this month)</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">{{ expense_total|floatformat:2 }}</div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-arrow-up fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-4 col-md-6 mb-4">
+      <div class="card border-left-info shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Net total (this month)</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">{{ net_total|floatformat:2 }}</div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-calendar fa-2x text-gray-300"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Charts -->
+  <div class="row">
+
+    <div class="col-lg-6 mb-4">
+      <div class="card shadow h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Expenses by category</h5>
+          <div style="height: 320px;">
+            <canvas id="expenseDonut"></canvas>
+          </div>
+          {% if not exp_values %}
+            <p class="text-muted mt-3 mb-0">No expenses recorded for this month.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+      <div class="card shadow h-100">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Income by category</h5>
+          <div style="height: 320px;">
+            <canvas id="incomeDonut"></canvas>
+          </div>
+          {% if not inc_values %}
+            <p class="text-muted mt-3 mb-0">No income recorded for this month.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent transactions -->
+  <div class="row">
+    <div class="col-12 mb-4">
+      <div class="card shadow">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h5 class="card-title mb-0">Recent transactions</h5>
+            <a href="{% url 'transaction-list' %}" class="btn btn-sm btn-outline-secondary">View all</a>
+          </div>
+
+          {% if recent %}
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th class="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for t in recent %}
+                    <tr>
+                      <td>{{ t.date|date:"d.m.Y" }}</td>
+                      <td>{{ t.kind }}</td>
+                      <td>{{ t.title }}</td>
+                      <td>{{ t.category.name }}</td>
+                      <td class="text-right">{{ t.amount|floatformat:2 }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">No transactions yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{{ exp_labels|json_script:"exp-labels" }}
+{{ exp_values|json_script:"exp-values" }}
+{{ inc_labels|json_script:"inc-labels" }}
+{{ inc_values|json_script:"inc-values" }}
+
 {% endblock content %}
+
 {% block javascript %}
-    <script src="{% static "montra/vendor/chart.js/Chart.min.js" %}"></script>
-    <script src="{% static "montra/js/goal-pie.js" %}"></script>
+  <script src="{% static "montra/vendor/chart.js/Chart.min.js" %}"></script>
+  <script src="{% static "montra/js/dashboard_pies.js" %}"></script>
 {% endblock javascript %}
+
+
