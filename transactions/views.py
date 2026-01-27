@@ -74,7 +74,7 @@ class TransactionListView(LoginRequiredMixin, ListView):
                 Q(category__name__icontains=q)
             )
 
-        return qs.order_by("-date")
+        return qs.order_by("-date", "-id")
 
 class TransactionCreateView(LoginRequiredMixin, CreateView):
     model = Transaction
