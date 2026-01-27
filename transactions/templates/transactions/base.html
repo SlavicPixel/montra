@@ -55,19 +55,43 @@
 
             <!-- Divider -->
             <hr class="sidebar-divider">
+            
+            <li class="nav-item">
+                <a class="nav-link" href="{% url "transaction-list" %}">
+                    <i class="fa-solid fa-exchange-alt"></i>
+                    <span>My Transactions</span></a>
+            
+            </li>
+            <!-- Divider -->
+            <hr class="sidebar-divider">
 
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'monthly_report' %}">
-                    <i class="fa-solid fa-person-walking"></i>
-                    <span>Monthly Report</span></a>
-                <a class="nav-link" href="">
-                    <i class="fa-solid fa-dumbbell"></i>
-                    <span>TBD #2</span></a>
-                <a class="nav-link" href="">
-                    <i class="fa-solid fa-trophy"></i>
-                    <span>TBD #3</span></a>
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo"
+                    aria-expanded="true" aria-controls="collapseTwo">
+                    <i class="fas fa-fw fa-chart-bar"></i>
+                    <span>Reports</span>
+                </a>
+                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" href="{% url 'monthly_report' %}">Monthly Report</a>
+                        <a class="collapse-item" href="cards.html">Yearly Report</a>
+                    </div>
+                </div>
             </li>
 
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUtilities"
+                    aria-expanded="true" aria-controls="collapseUtilities">
+                    <i class="fas fa-fw fa-wrench"></i>
+                    <span>Tools</span>
+                </a>
+                <div id="collapseUtilities" class="collapse" aria-labelledby="headingUtilities"
+                    data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item" href="{% url 'currency-dashboard' %}">Exchange Rates</a>
+                    </div>
+                </div>
+            </li>
 
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
@@ -99,7 +123,27 @@
                           {% endif %}
                         {% endfor %}
                       </ol> -->
-                    
+                    <form
+                        class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search"
+                        action="{% url 'transaction-list' %}"
+                        method="get"
+                    >
+                        <div class="input-group">
+                            <input
+                                type="text"
+                                name="q"
+                                class="form-control bg-light border-0 small"
+                                placeholder="Search transactions..."
+                                aria-label="Search transactions"
+                                value="{{ request.GET.q|default_if_none:'' }}"
+                            >
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search fa-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                     
                     <!-- Sidebar Toggle (Topbar) -->
                     <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
@@ -120,14 +164,14 @@
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="">
+                                <!-- <a class="dropdown-item" href="">
                                     <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Profile
                                 </a>
                                 <a class="dropdown-item" href="">
                                     <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Settings
-                                </a>
+                                </a> -->
                                 <div class="dropdown-divider"></div>
                                 <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
