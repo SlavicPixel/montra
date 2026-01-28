@@ -77,3 +77,60 @@ class MonthlyCategoryReport(models.Model):
 
     def __str__(self):
         return f"{self.user_id} {self.category_id} {self.year}-{self.month:02d}"
+    
+class YearlyCategoryReport(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    category = models.ForeignKey("Category", on_delete=models.PROTECT)
+
+    year = models.IntegerField(db_index=True)
+
+    total_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
+    avg_amount = models.DecimalField(max_digits=14, decimal_places=6, default=Decimal("0.00"))
+    tx_count = models.IntegerField(default=0)
+    computed_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "category", "year"],
+                name="uniq_yearly_report_user_category_year",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["user", "year"]),
+            models.Index(fields=["category"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} {self.category_id} {self.year}"
+    
+class CustomRangeCategoryReport(models.Model):
+    request_id = models.UUIDField(db_index=True)
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    category = models.ForeignKey("Category", on_delete=models.PROTECT)
+
+    date_from = models.DateField(db_index=True)
+    date_to = models.DateField(db_index=True)
+
+    total_amount = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
+    avg_amount = models.DecimalField(max_digits=14, decimal_places=6, default=Decimal("0.00"))
+    tx_count = models.IntegerField(default=0)
+    computed_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["request_id", "user", "category"],
+                name="uniq_custom_range_request_user_category",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["user", "request_id"]),
+            models.Index(fields=["request_id"]),
+            models.Index(fields=["user", "date_from", "date_to"]),
+            models.Index(fields=["category"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} {self.category_id} {self.date_from}..{self.date_to} ({self.request_id})"
