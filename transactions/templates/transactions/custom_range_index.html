@@ -1,0 +1,105 @@
+{% extends "transactions/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-0">Custom Range Reports</h2>
+      <div class="text-muted small">
+        Generate a report for any date range, then open it from the list below.
+      </div>
+    </div>
+  </div>
+
+  <form method="post" action="{% url 'custom-range-refresh' %}" class="mb-4">
+    {% csrf_token %}
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-4">
+        <label class="form-label mb-1">Date from</label>
+        <input type="date" name="date_from" class="form-control"
+               value="{{ date_from|date:'Y-m-d' }}">
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label mb-1">Date to</label>
+        <input type="date" name="date_to" class="form-control"
+               value="{{ date_to|date:'Y-m-d' }}">
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-outline-primary w-100" type="submit">
+          <i class="fas fa-sync-alt"></i>
+          Refresh custom range report
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <div class="card shadow-sm mt-4">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Your reports</h5>
+      <p>has_pending = {{ has_pending }}</p>
+
+      {% if reports %}
+        <div class="table-responsive">
+          <table class="table table-striped align-middle">
+            <thead>
+              <tr>
+                <th>Range</th>
+                <th class="text-center">Rows</th>
+                <th>Computed at</th>
+                <th>Status</th>
+                <th class="text-end"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in reports %}
+                <tr>
+                  <td>{{ r.date_from }} → {{ r.date_to }}</td>
+                  <td class="text-center">{{ r.rows }}</td>
+                  <td>
+                    {% if r.computed_at %}
+                      {{ r.computed_at }}
+                    {% else %}
+                      <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if r.status == "ready" %}
+                      <span class="badge badge-success">Ready</span>
+                    {% else %}
+                      <span class="badge badge-secondary">Missing</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <a class="btn btn-sm btn-primary"
+                       href="{% url 'custom_range_report_detail' r.request_id %}">
+                      Open
+                    </a>
+
+                    <form method="post"
+                        action="{% url 'custom_range_report_delete' r.request_id %}"
+                        class="d-inline"
+                        onsubmit="return confirm('Delete this report?');">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="btn btn-sm btn-outline-danger ml-2"
+                            title="Delete report"
+                            aria-label="Delete report">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted mb-0">No reports yet. Generate one above.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock content %}
+

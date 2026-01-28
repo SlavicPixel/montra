@@ -1,0 +1,133 @@
+{% extends "transactions/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h2 class="mb-0">Yearly Report</h2>
+      <div class="text-muted small">
+        {{ year }} • Source: <span class="fw-semibold">{{ source }}</span>
+        {% if computed_at %} • computed_at: {{ computed_at }}{% endif %}
+      </div>
+    </div>
+
+    <a href="{% url 'transaction-list' %}" class="btn btn-outline-secondary">
+      Back to Transactions
+    </a>
+  </div>
+
+  {# Refresh button #}
+  <div class="d-flex align-items-center mb-3">
+    <form method="post" action="{% url 'yearly-refresh' %}" class="mr-2">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ year }}">
+      <button class="btn btn-outline-primary" type="submit">
+        <i class="fas fa-sync-alt"></i>
+        Refresh yearly report
+      </button>
+    </form>
+    <div class="text-muted small">
+      If the report is missing, click refresh and reload after a moment.
+    </div>
+  </div>
+
+  <form method="get" class="mb-4">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-4">
+        <label class="form-label mb-1">Year</label>
+        <input type="number" name="year" class="form-control" value="{{ year }}" min="2000" max="2100">
+      </div>
+      <div class="col-12 col-md-4">
+        <button class="btn btn-primary w-100" type="submit">Load report</button>
+      </div>
+      <div class="col-12 col-md-4">
+        <a class="btn btn-outline-secondary w-100" href="{% url 'yearly_report' %}">
+          Reset
+        </a>
+      </div>
+    </div>
+  </form>
+
+  {% if not_ready %}
+    <div class="text-center">
+      <h4 class="mt-4">Yearly report is not ready yet</h4>
+      <div class="text-muted">
+        Click “Refresh yearly report” to generate it, then reload this page.
+      </div>
+    </div>
+  {% endif %}
+
+  {% if rows %}
+    <div class="row g-4">
+      <div class="col-12 col-lg-6">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Spending by category</h5>
+            <div style="height: 340px;">
+              <canvas id="spendPie"></canvas>
+            </div>
+            <div class="text-muted small mt-2">
+              Pie chart shows <b>total expense</b> per category for the selected year.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Breakdown</h5>
+            <table class="table table-striped align-middle">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th class="text-end">Total</th>
+                  <th class="text-end">Average</th>
+                  <th class="text-end">Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in rows %}
+                <tr>
+                  <td>{{ r.category_name }}</td>
+                  <td class="text-end">{{ r.total_amount }}</td>
+                  <td class="text-end">{{ r.avg_amount|floatformat:2 }}</td>
+                  <td class="text-end">{{ r.tx_count }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {{ rows|json_script:"report-rows" }}
+  {% endif %}
+</div>
+{% endblock content %}
+
+{% block javascript %}
+  <script src="{% static "montra/vendor/chart.js/Chart.min.js" %}"></script>
+  <script src="{% static "montra/js/report_pie.js" %}"></script>
+
+  {# auto-refresh while missing (every 7s, up to ~1 min) #}
+  {% if not_ready %}
+  <script>
+    let tries = 0;
+    const maxTries = 9;
+    const intervalMs = 7000;
+
+    const t = setInterval(() => {
+      tries += 1;
+      if (tries >= maxTries) {
+        clearInterval(t);
+        return;
+      }
+      window.location.reload();
+    }, intervalMs);
+  </script>
+  {% endif %}
+{% endblock javascript %}
