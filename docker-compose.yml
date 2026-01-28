@@ -197,6 +197,8 @@ services:
     command: >
       /opt/spark/bin/spark-submit
       /opt/app/spark_jobs/monthly_category_report.py
+      /opt/app/spark_jobs/yearly_category_report.py
+      /opt/app/spark_jobs/custom_range_category_report.p
     networks:
       - montra_net
     restart: "no"
