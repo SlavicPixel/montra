@@ -7,8 +7,14 @@ from .views import (
     TransactionDeleteView,
     monthly_category_report,
     monthly_report_view,
+    yearly_report_view,
+    trigger_yearly_refresh,
     exchange_rates_api,
     currency_dashboard,
+    custom_range_report_view,
+    custom_range_report_detail_view,
+    trigger_custom_range_refresh,
+    delete_custom_range_report,
 )
 
 urlpatterns = [
@@ -19,6 +25,12 @@ urlpatterns = [
     path("<int:pk>/delete/", TransactionDeleteView.as_view(), name="transaction-delete"),
     path("api/reports/monthly", monthly_category_report, name="monthly_category_report"),
     path("reports/monthly/", monthly_report_view, name="monthly_report"),
+    path("reports/yearly/", yearly_report_view, name="yearly_report"),
+    path("reports/yearly/refresh/", trigger_yearly_refresh, name="yearly-refresh"),
+    path("reports/custom-range/", custom_range_report_view, name="custom_range_report"),
+    path("reports/custom-range/refresh/", trigger_custom_range_refresh, name="custom-range-refresh"),
+    path("reports/custom-range/<uuid:request_id>/", custom_range_report_detail_view, name="custom_range_report_detail"),
+    path("reports/custom-range/<uuid:request_id>/delete/", delete_custom_range_report, name="custom_range_report_delete"),
     path("api/exchange-rates", exchange_rates_api, name="exchange_rates_api"),
     path("tools/currencies/", currency_dashboard, name="currency-dashboard"),
 ]
