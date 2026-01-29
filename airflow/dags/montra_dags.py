@@ -87,7 +87,7 @@ with DAG(
 with DAG(
     dag_id="montra_monthly_spark_report_full_refresh",
     start_date=datetime(2026, 1, 1, tzinfo=TZ),
-    schedule="15 2 * * *",   # svaki dan u 02:15
+    schedule="5 2 * * *",   # svaki dan u 02:15
     catchup=False,
     tags=["montra", "spark", "reports"],
 ) as dag:
