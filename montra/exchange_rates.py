@@ -1,6 +1,7 @@
 import os
 import requests
-from django.core.cache import cache
+
+from transactions.services.safe_cache import cache_get, cache_set
 
 API_BASE = "https://api.exchangerate.host"
 ACCESS_KEY = os.environ.get("EXCHANGERATE_API_KEY")
@@ -8,9 +9,11 @@ DEFAULT_TTL = int(os.environ.get("EXCHANGE_RATE_TTL", "43200"))
 
 TOP_CURRENCIES = ["USD", "GBP", "CHF", "JPY", "AUD", "CAD", "SEK", "NOK", "CZK", "PLN"]
 
+
 def _cache_key(base: str, symbols: list[str]) -> str:
     symbols_norm = ",".join(sorted(s.strip().upper() for s in symbols if s))
     return f"fx:live:base={base.upper()}:symbols={symbols_norm}"
+
 
 def _call_live(source: str, currencies: list[str]) -> dict:
     params = {
@@ -24,11 +27,13 @@ def _call_live(source: str, currencies: list[str]) -> dict:
     r.raise_for_status()
     return r.json()
 
+
 def get_latest_rates(base: str = "EUR", symbols: list[str] | None = None) -> dict:
     """
     Returns:
       {"base": "EUR", "rates": {"USD": 1.09, "GBP": 0.85}, "timestamp": 123..., "source": "cache|api|api_fallback"}
     Uses Redis cache to reduce external calls.
+    If Redis is down -> works without cache (falls back to API calls).
     """
     if not symbols:
         symbols = ["USD"]
@@ -37,15 +42,16 @@ def get_latest_rates(base: str = "EUR", symbols: list[str] | None = None) -> dic
     symbols = [s.upper() for s in symbols]
 
     key = _cache_key(base, symbols)
-    cached = cache.get(key)
+    cached = cache_get(key)
     if cached is not None:
-        cached["source"] = "cache"
-        return cached
+        # avoid mutating cached dict object (safe)
+        out = dict(cached)
+        out["source"] = "cache"
+        return out
 
     # 1) Try direct base (source=base)
     data = _call_live(base, symbols)
     if data.get("success") is True and "quotes" in data:
-        # quotes are like EURUSD? Actually docs show USDGBP etc. With source it should be SOURCE+TARGET
         quotes = data.get("quotes") or {}
         rates = {}
         for s in symbols:
@@ -59,17 +65,14 @@ def get_latest_rates(base: str = "EUR", symbols: list[str] | None = None) -> dic
             "timestamp": data.get("timestamp"),
             "source": "api",
         }
-        cache.set(key, payload, timeout=DEFAULT_TTL)
+        cache_set(key, payload, timeout=DEFAULT_TTL)  # safe even if Redis is down
         return payload
 
     # 2) Fallback: use USD as source and compute cross rates
-    # Need USD->base and USD->symbol to compute base->symbol:
-    # base->sym = (USD->sym) / (USD->base)
     need = sorted(set(symbols + [base]))
     data_usd = _call_live("USD", need)
 
     if not (data_usd.get("success") is True and "quotes" in data_usd):
-        # give a useful error back
         return {
             "base": base,
             "rates": {},
@@ -101,8 +104,9 @@ def get_latest_rates(base: str = "EUR", symbols: list[str] | None = None) -> dic
         "timestamp": data_usd.get("timestamp"),
         "source": "api_fallback",
     }
-    cache.set(key, payload, timeout=DEFAULT_TTL)
+    cache_set(key, payload, timeout=DEFAULT_TTL)
     return payload
+
 
 def get_top_rates(base: str = "EUR") -> dict:
     return get_latest_rates(base=base, symbols=TOP_CURRENCIES)

@@ -22,6 +22,7 @@ from .services.dashboard_cache import (
     TTL_SECONDS,
     LOCK_TTL,
 )
+from .services.safe_cache import cache_get, cache_set, cache_add, cache_delete
 from montra.exchange_rates import get_latest_rates, get_top_rates, TOP_CURRENCIES
 
 import uuid
@@ -40,12 +41,12 @@ def dashboard_view(request):
     ym = now.strftime("%Y-%m")
 
     cache_key = make_dash_cache_key(request.user.id, ym)
-    cached = cache.get(cache_key)
+    cached = cache_get(cache_key)
     if cached:
         return render(request, "transactions/dashboard.html", cached)
 
     lock_key = make_lock_key(request.user.id, ym)
-    got_lock = cache.add(lock_key, "1", timeout=LOCK_TTL)
+    got_lock = cache_add(lock_key, "1", timeout=LOCK_TTL)
 
     if not got_lock:
         context = compute_dashboard_context(request.user)
@@ -53,10 +54,10 @@ def dashboard_view(request):
 
     try:
         context = compute_dashboard_context(request.user)
-        cache.set(cache_key, context, timeout=TTL_SECONDS)
+        cache_set(cache_key, context, timeout=TTL_SECONDS)
         return render(request, "transactions/dashboard.html", context)
     finally:
-        cache.delete(lock_key)
+        cache_delete(lock_key)
 
 
 class TransactionListView(LoginRequiredMixin, ListView):
